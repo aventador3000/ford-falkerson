@@ -1,1 +1,91 @@
++package graphs
++alias sprintf org.eolang.txt.sprintf
++alias org.eolang.util.ieee754.infinity
 
+[arr] > min
+  reduce. > @
+    arr
+    get.
+      arr
+      0
+    []
+      [accum current] > reduce
+        if. > @
+          greater.
+            accum
+            current
+          current
+          accum
+
+[graphAdjList iStartVertex iEndVertex] > fordFulkerson
+  dfs > @
+    iStartVertex
+    infinity
+    initialVisited
+
+  map. > initialVisited
+    graphAdjList
+    []
+      [current] > map
+        false > @
+
+  [iSubStartVertex minCapacity visited] > dfs
+    if. > @
+      iSubStartVertex.eq (^.iEndVertex)
+      minCapacity
+// граница "relax"...
+      reduce.
+        (^.graphAdjList.adjacencies.get iSubStartVertex).edges
+        []
+          [accumulator current] > reduce
+            [finalDelta finalGraph] > resultStructure
+            ^.^.dfs > delta
+              current.ivertex
+              min
+                *
+                  ^.^.minCapacity
+                  sub.
+                    current.weight
+                    current.remaining
+              ^.^.visited
+            if. > @
+              and.
+                not
+                  ^.^.visited.get (current.ivertex)
+                less.  
+                  current.remaining
+                  current.weight
+              if.
+                delta.greater 0
+                resultStructure ...// обновление тут // будет возвращаться "измененный" accumulator
+                  ???
+                  adjacencyList
+                    replace.
+                      ^.^.^.^.graphAdjList.adjacencies
+                      ^.^.^.iSubStartVertex
+                      adjacency
+                        (^.^.^.^.graphAdjList.adjacencies.get (^.^.^.iSubStartVertex)).vertex
+                        replace.
+                          (^.^.^.^.graphAdjList.adjacencies.get (^.^.^.iSubStartVertex)).edges
+                          current.ivertex
+                          edge
+                            current.ivertex
+                            ???
+                            ???
+
+                accumulator ...// а тут без обновления // будет возвращаться "НЕизмененный" accumulator
+
+
+  int dfs(int u, int Cmin):         // Cmin — пропускная способность в текущем подпотоке
+   if u = t
+       return Cmin
+   visited[u] = true                  
+   for v in u.children
+       auto uv = edge(u, v)
+       if not visited[v] and uv.f < uv.c
+           int delta = dfs(v, min(Cmin, uv.c - uv.f))
+           if delta > 0
+               uv.f += delta <------ !!!!
+               uv.backEdge.f -= delta <------- !!! обновление графа. => копирование + замена так как структуры неизменяемые. смотри relax в дейкстре (строки 87-95 ТА ЖЕ ИСТОРИЯ ЧТО И ТУТ)
+               return delta <------- 
+   return 0
